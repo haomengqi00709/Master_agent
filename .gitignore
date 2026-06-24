@@ -1,0 +1,16 @@
+# raw source PDFs — not needed at runtime, large, and copyrighted (IEC standards)
+Standards-Reference/
+*.pdf
+*.zip
+
+# derived data layer — regenerated at startup by kg-app/backend/build_kg.py
+kg-app/backend/data/
+
+# python / os / misc
+__pycache__/
+*.pyc
+.DS_Store
+*.log
+.env
+.venv/
+.playwright-mcp/

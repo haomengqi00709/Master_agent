@@ -1,0 +1,13 @@
+{
+"id": "60617-13",
+"part": 13,
+"title_en": "Analogue elements",
+"title_fr": "Éléments analogiques",
+"standard": "IEC 60617-13 (formerly IEC 617-13)",
+"edition": "1st edition, 1993",
+"source": "Publication No.617-13.pdf",
+"pages": 27,
+"image_mode": "page",
+"src_dir": "/private/tmp/claude-501/-Users-jasonhao-Desktop-Trust-AI-Advisory-daniel-s-Electronic-Standards-Reference/b3dbbf10-fcae-4b73-bb3d-3a27c37db6ed/scratchpad/up13",
+"blurb": "Analogue building blocks: amplifiers, operational amplifiers, converters (DAC/ADC), voltage regulators, comparators, analogue switches and function elements. Uses dependency-notation I/O qualifiers and references the binary-logic part (617-12) and [[60617-2]] qualifying symbols. (1993 edition; scans hold two printed pages per image.)"
+}

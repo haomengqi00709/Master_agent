@@ -1,0 +1,452 @@
+[
+{
+"slug": "external-insulation",
+"title": "External insulation",
+"clause": "3.101.20.",
+"iev": ""
+},
+{
+"slug": "internal-insulation",
+"title": "Internal insulation",
+"clause": "3.101.21.",
+"iev": ""
+},
+{
+"slug": "self-restoring-insulation",
+"title": "Self-restoring insulation",
+"clause": "3.101.22.",
+"iev": ""
+},
+{
+"slug": "non-self-restoring-insulation",
+"title": "Non-self-restoring insulation",
+"clause": "3.101.23.",
+"iev": ""
+},
+{
+"slug": "isolated-neutral-system",
+"title": "Isolated neutral system",
+"clause": "3.101.5.",
+"iev": ""
+},
+{
+"slug": "resonant-earthed-system",
+"title": "Resonant earthed system",
+"clause": "3.101.6.",
+"iev": ""
+},
+{
+"slug": "earthed-neutral-system",
+"title": "Earthed neutral system",
+"clause": "3.101.7.",
+"iev": ""
+},
+{
+"slug": "earth-fault-factor",
+"title": "Earth fault factor",
+"clause": "3.101.8.",
+"iev": ""
+},
+{
+"slug": "sf6-circuit-breaker",
+"title": "Sulphur hexafluoride (SF6) circuit-breaker",
+"clause": "3.102.10",
+"iev": "441-14-31"
+},
+{
+"slug": "air-blast-circuit-breaker",
+"title": "Air-blast circuit-breaker",
+"clause": "3.102.11",
+"iev": "441-14-32"
+},
+{
+"slug": "restrike-free-circuit-breaker",
+"title": "Restrike-free circuit-breaker",
+"clause": "3.102.12.",
+"iev": ""
+},
+{
+"slug": "circuit-breaker",
+"title": "Circuit-breaker",
+"clause": "3.102.3",
+"iev": "441-14-20"
+},
+{
+"slug": "dead-tank-circuit-breaker",
+"title": "Dead-tank circuit-breaker",
+"clause": "3.102.4",
+"iev": "441-14-25"
+},
+{
+"slug": "live-tank-circuit-breaker",
+"title": "Live-tank circuit-breaker",
+"clause": "3.102.5",
+"iev": "441-14-26"
+},
+{
+"slug": "air-circuit-breaker",
+"title": "Air circuit-breaker",
+"clause": "3.102.6",
+"iev": "441-14-27"
+},
+{
+"slug": "oil-circuit-breaker",
+"title": "Oil circuit-breaker",
+"clause": "3.102.7",
+"iev": "441-14-28"
+},
+{
+"slug": "vacuum-circuit-breaker",
+"title": "Vacuum circuit-breaker",
+"clause": "3.102.8",
+"iev": "441-14-29"
+},
+{
+"slug": "gas-blast-circuit-breaker",
+"title": "Gas-blast circuit-breaker",
+"clause": "3.102.9",
+"iev": "441-14-30"
+},
+{
+"slug": "pole",
+"title": "Pole (of a circuit-breaker)",
+"clause": "3.103.1",
+"iev": "441-15-01"
+},
+{
+"slug": "main-circuit",
+"title": "Main circuit",
+"clause": "3.103.2",
+"iev": "441-15-02"
+},
+{
+"slug": "module",
+"title": "Module (of a pole)",
+"clause": "3.103.22.",
+"iev": ""
+},
+{
+"slug": "main-contact",
+"title": "Main contact",
+"clause": "3.103.7",
+"iev": "441-15-07"
+},
+{
+"slug": "arcing-contact",
+"title": "Arcing contact",
+"clause": "3.103.8",
+"iev": "441-15-08"
+},
+{
+"slug": "stored-energy-operation",
+"title": "Stored-energy operation",
+"clause": "3.104.11",
+"iev": "441-16-15"
+},
+{
+"slug": "independent-manual-operation",
+"title": "Independent manual operation",
+"clause": "3.104.12",
+"iev": "441-16-16"
+},
+{
+"slug": "instantaneous-release",
+"title": "Instantaneous release",
+"clause": "3.104.17",
+"iev": "441-16-32"
+},
+{
+"slug": "making-current-release",
+"title": "Making-current release",
+"clause": "3.104.18.",
+"iev": ""
+},
+{
+"slug": "over-current-release",
+"title": "Over-current release",
+"clause": "3.104.19",
+"iev": "441-16-33"
+},
+{
+"slug": "definite-time-delay-over-current-release",
+"title": "Definite time-delay over-current release",
+"clause": "3.104.20.",
+"iev": ""
+},
+{
+"slug": "reverse-current-release",
+"title": "Reverse-current release",
+"clause": "3.104.26.",
+"iev": ""
+},
+{
+"slug": "interlocking-device",
+"title": "Interlocking device",
+"clause": "3.104.31",
+"iev": "441-16-49"
+},
+{
+"slug": "dependent-manual-operation",
+"title": "Dependent manual operation",
+"clause": "3.104.9",
+"iev": "441-16-13"
+},
+{
+"slug": "recovery-voltage",
+"title": "Recovery voltage",
+"clause": "3.105",
+"iev": "441-17-25"
+},
+{
+"slug": "reignition",
+"title": "Reignition",
+"clause": "3.105",
+"iev": "441-17-46"
+},
+{
+"slug": "restrike",
+"title": "Restrike",
+"clause": "3.105",
+"iev": "441-17-45"
+},
+{
+"slug": "rated-value",
+"title": "Rated value",
+"clause": "3.105.1",
+"iev": "441-17-01"
+},
+{
+"slug": "prospective-current",
+"title": "Prospective current",
+"clause": "3.105.2",
+"iev": "441-17-02"
+},
+{
+"slug": "prospective-peak-current",
+"title": "Prospective peak current",
+"clause": "3.105.3",
+"iev": "441-17-03"
+},
+{
+"slug": "rated-voltage",
+"title": "Rated voltage (U_r)",
+"clause": "4.1",
+"iev": ""
+},
+{
+"slug": "rated-short-circuit-breaking-current",
+"title": "Rated short-circuit breaking current",
+"clause": "4.101",
+"iev": ""
+},
+{
+"slug": "rated-short-circuit-making-current",
+"title": "Rated short-circuit making current",
+"clause": "4.103",
+"iev": ""
+},
+{
+"slug": "rated-operating-sequence",
+"title": "Rated operating sequence",
+"clause": "4.104",
+"iev": ""
+},
+{
+"slug": "rated-small-inductive-breaking-current",
+"title": "Rated small inductive breaking current",
+"clause": "4.106.",
+"iev": ""
+},
+{
+"slug": "rated-out-of-phase-breaking-current",
+"title": "Rated out-of-phase breaking current",
+"clause": "4.106A.",
+"iev": ""
+},
+{
+"slug": "rated-single-capacitor-bank-breaking-current",
+"title": "Rated single capacitor bank breaking current",
+"clause": "4.107.",
+"iev": ""
+},
+{
+"slug": "rated-line-charging-breaking-current",
+"title": "Rated line-charging breaking current",
+"clause": "4.108.",
+"iev": ""
+},
+{
+"slug": "rated-cable-charging-breaking-current",
+"title": "Rated cable-charging breaking current",
+"clause": "4.109.",
+"iev": ""
+},
+{
+"slug": "rated-back-to-back-capacitor-bank-breaking-current",
+"title": "Rated back-to-back capacitor bank breaking current",
+"clause": "4.110.",
+"iev": ""
+},
+{
+"slug": "rated-capacitor-bank-inrush-making-current",
+"title": "Rated capacitor bank inrush making current",
+"clause": "4.111.",
+"iev": ""
+},
+{
+"slug": "rated-insulation-level",
+"title": "Rated insulation level",
+"clause": "4.2",
+"iev": ""
+},
+{
+"slug": "rated-frequency",
+"title": "Rated frequency",
+"clause": "4.3",
+"iev": ""
+},
+{
+"slug": "rated-normal-current",
+"title": "Rated normal current (I_r)",
+"clause": "4.4",
+"iev": ""
+},
+{
+"slug": "rated-short-time-withstand-current",
+"title": "Rated short-time withstand current",
+"clause": "4.5",
+"iev": ""
+},
+{
+"slug": "rated-peak-withstand-current",
+"title": "Rated peak withstand current",
+"clause": "4.6.",
+"iev": ""
+},
+{
+"slug": "rated-duration-of-short-circuit",
+"title": "Rated duration of short-circuit",
+"clause": "4.7",
+"iev": ""
+},
+{
+"slug": "dielectric-test",
+"title": "Dielectric test",
+"clause": "6.1.",
+"iev": ""
+},
+{
+"slug": "partial-discharge-test",
+"title": "Partial discharge test",
+"clause": "6.1.9.",
+"iev": ""
+},
+{
+"slug": "mechanical-and-environmental-test",
+"title": "Mechanical and environmental test",
+"clause": "6.101.",
+"iev": ""
+},
+{
+"slug": "short-circuit-test",
+"title": "Short-circuit (making and breaking) test",
+"clause": "6.102.",
+"iev": ""
+},
+{
+"slug": "short-circuit-test-quantities",
+"title": "Short-circuit test quantities",
+"clause": "6.104.",
+"iev": ""
+},
+{
+"slug": "short-circuit-test-procedure",
+"title": "Short-circuit test procedure",
+"clause": "6.105.",
+"iev": ""
+},
+{
+"slug": "critical-current-test",
+"title": "Critical-current test",
+"clause": "6.107.",
+"iev": ""
+},
+{
+"slug": "single-phase-short-circuit-test",
+"title": "Single-phase short-circuit test",
+"clause": "6.108.",
+"iev": ""
+},
+{
+"slug": "short-line-fault-test",
+"title": "Short-line fault test",
+"clause": "6.109.",
+"iev": ""
+},
+{
+"slug": "out-of-phase-test",
+"title": "Out-of-phase making and breaking test",
+"clause": "6.110.",
+"iev": ""
+},
+{
+"slug": "capacitive-current-switching-test",
+"title": "Capacitive current switching test",
+"clause": "6.111.",
+"iev": ""
+},
+{
+"slug": "magnetizing-and-small-inductive-current-switching-test",
+"title": "Magnetizing and small inductive current switching test",
+"clause": "6.112.",
+"iev": ""
+},
+{
+"slug": "radio-interference-voltage-test",
+"title": "Radio interference voltage (RIV) test",
+"clause": "6.2.",
+"iev": ""
+},
+{
+"slug": "temperature-rise-test",
+"title": "Temperature-rise test",
+"clause": "6.3.",
+"iev": ""
+},
+{
+"slug": "making-and-breaking-capacity",
+"title": "Making and breaking capacity",
+"clause": "?",
+"iev": ""
+},
+{
+"slug": "operating-mechanism",
+"title": "Operating mechanism",
+"clause": "?",
+"iev": ""
+},
+{
+"slug": "short-line-fault",
+"title": "Short-line fault (SLF)",
+"clause": "?",
+"iev": ""
+},
+{
+"slug": "test-duty",
+"title": "Test duty",
+"clause": "?",
+"iev": ""
+},
+{
+"slug": "transient-recovery-voltage",
+"title": "Transient recovery voltage (TRV)",
+"clause": "?",
+"iev": ""
+},
+{
+"slug": "type-test",
+"title": "Type test",
+"clause": "?",
+"iev": ""
+}
+]

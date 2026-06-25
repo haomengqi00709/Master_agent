@@ -55,17 +55,28 @@
     <header><h1>IEC 60617 Symbol Knowledge Graph</h1><div class="sub" id="stat">loading…</div></header>
     <div class="tabs">
       <button class="on" data-t="search">Search</button>
+      <button data-t="sow">SOW</button>
       <button data-t="ask">Ask AI</button>
+      <button data-t="history">History</button>
       <button data-t="detail">Detail</button>
     </div>
     <div class="pane" id="pane-search">
       <input id="q" placeholder="Search symbols (e.g. circuit breaker, earth, fuse)…" autocomplete="off"/>
       <div id="results"></div>
     </div>
+    <div class="pane" id="pane-sow" style="display:none">
+      <div class="muted" style="font-size:12px;margin-bottom:6px">Paste a Statement of Work — get the relevant standard clauses and symbols.</div>
+      <textarea id="sowtext" style="min-height:120px" placeholder="e.g. The contractor shall repair and overhaul flameproof motor enclosures in Zone 1 hazardous areas and restore certification; single-line diagrams shall use IEC symbols for circuit breakers and disconnectors…"></textarea>
+      <button class="go" id="sowbtn">Find relevant standards</button>
+      <div id="sowout"></div>
+    </div>
     <div class="pane" id="pane-ask" style="display:none">
       <textarea id="qq" placeholder="Ask a question, e.g. How is a protective earth drawn? What's the difference between a contactor and a circuit breaker?"></textarea>
       <button class="go" id="askbtn">Ask</button>
       <div id="answer"></div>
+    </div>
+    <div class="pane" id="pane-history" style="display:none">
+      <div class="muted">loading…</div>
     </div>
     <div class="pane detail" id="pane-detail" style="display:none">
       <div class="muted">Click a node or a search result to see details.</div>
@@ -87,12 +98,13 @@ let FG, NODES={}, curPart="";
 
 function tab(t){
   document.querySelectorAll(".tabs button").forEach(b=>b.classList.toggle("on",b.dataset.t===t));
-  for(const p of ["search","ask","detail"]) document.getElementById("pane-"+p).style.display = p===t?"":"none";
+  for(const p of ["search","sow","ask","history","detail"]) document.getElementById("pane-"+p).style.display = p===t?"":"none";
 }
-document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>tab(b.dataset.t));
+document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{tab(b.dataset.t); if(b.dataset.t==="history") loadHistory();});
 
-async function loadGraph(part){
-  const g=await (await fetch(`${API}/api/graph${part?`?part=${part}`:""}`)).json();
+async function loadGraph(sel){
+  const qs = sel==="standards" ? "?docs=1" : (sel ? "?part="+sel : "");
+  const g=await (await fetch(`${API}/api/graph${qs}`)).json();
   NODES={}; g.nodes.forEach(n=>NODES[n.id]=n);
   const el=document.getElementById("graph");
   if(!FG){
@@ -111,6 +123,63 @@ async function loadGraph(part){
 }
 addEventListener("resize",()=>{if(FG){const el=document.getElementById("graph");FG.width(el.clientWidth).height(el.clientHeight);}});
 
+function esc(s){return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+function renderBody(md){
+  // strip the H1, image markdown and <sub> captions (shown separately), then
+  // render the prose: ## headings, - lists, **bold**, and clickable [[wikilinks]].
+  let t=(md||"").replace(/^#\s+.*$/m,"").replace(/!\[[^\]]*\]\([^)]*\)/g,"")
+        .replace(/<sub>[\s\S]*?<\/sub>/g,"").trim();
+  if(!t) return "";
+  const inline=(s)=>esc(s)
+    .replace(/\[\[([^\]|#]+)(?:#[^\]|]+)?\|([^\]]+)\]\]/g,(m,tg,lb)=>`<a href="#" onclick="showDetail('${tg.trim()}');return false">${lb}</a>`)
+    .replace(/\[\[([^\]|#]+)(?:#[^\]|]+)?\]\]/g,(m,tg)=>`<a href="#" onclick="showDetail('${tg.trim()}');return false">${tg.trim()}</a>`)
+    .replace(/\*\*([^*]+)\*\*/g,"<b>$1</b>");
+  let out="",inList=false;
+  for(let ln of t.split(/\n/)){
+    ln=ln.trim();
+    if(!ln){if(inList){out+="</ul>";inList=false;}continue;}
+    if(/^#{2,}\s+/.test(ln)){if(inList){out+="</ul>";inList=false;}out+=`<h3>${inline(ln.replace(/^#{2,}\s+/,""))}</h3>`;continue;}
+    if(/^[-*]\s+/.test(ln)){if(!inList){out+="<ul>";inList=true;}out+=`<li>${inline(ln.replace(/^[-*]\s+/,""))}</li>`;continue;}
+    if(inList){out+="</ul>";inList=false;}
+    out+=`<p>${inline(ln)}</p>`;
+  }
+  if(inList)out+="</ul>";
+  return out;
+}
+function renderAnswer(md){
+  // render an AI answer: ## headings, **bold**, - lists, and clickable [id] / [[link]] citations.
+  let t=(md||"").trim(); if(!t) return "";
+  const inline=(s)=>esc(s)
+    .replace(/\[\[([^\]|#]+)(?:#[^\]|]+)?\|([^\]]+)\]\]/g,(m,tg,lb)=>`<a href="#" onclick="showDetail('${tg.trim()}');return false">${lb}</a>`)
+    .replace(/\[\[([^\]|#]+)(?:#[^\]|]+)?\]\]/g,(m,tg)=>`<a href="#" onclick="showDetail('${tg.trim()}');return false">${tg.trim()}</a>`)
+    .replace(/\[([0-9A-Za-z][0-9A-Za-z\-]+)\]/g,(m,id)=>`<a href="#" onclick="showDetail('${id}');return false">[${id}]</a>`)
+    .replace(/\*\*([^*]+)\*\*/g,"<b>$1</b>");
+  let out="",inList=false;
+  for(let ln of t.split(/\n/)){
+    ln=ln.trim();
+    if(!ln){if(inList){out+="</ul>";inList=false;}continue;}
+    if(/^#{1,6}\s+/.test(ln)){if(inList){out+="</ul>";inList=false;}out+=`<h3>${inline(ln.replace(/^#{1,6}\s+/,""))}</h3>`;continue;}
+    if(/^[-*]\s+/.test(ln)){if(!inList){out+="<ul>";inList=true;}out+=`<li>${inline(ln.replace(/^[-*]\s+/,""))}</li>`;continue;}
+    if(inList){out+="</ul>";inList=false;}
+    out+=`<p>${inline(ln)}</p>`;
+  }
+  if(inList)out+="</ul>";
+  return out;
+}
+function renderMeta(d){
+  // show how the local agent worked: usage line + collapsible step trace.
+  let h=""; const u=d.usage||{};
+  if(u.turns!=null){
+    const fresh=((u.input||0)+(u.output||0))/1000;
+    h+=`<div style="opacity:.6;font-size:12px;margin:8px 0 2px">⚙ ${u.turns} steps · ${u.duration_s}s · ~${fresh.toFixed(1)}k new tokens${u.cost_usd!=null?" · $"+(u.cost_usd).toFixed(2):""}</div>`;
+  }
+  if(d.trace&&d.trace.length){
+    const reads=d.trace.filter(s=>s.indexOf("Read")===0).length;
+    h+=`<details style="font-size:12px;margin:2px 0 6px"><summary style="cursor:pointer;opacity:.7">trace — ${d.trace.length} tool calls, ${reads} pages read</summary>`+
+       `<ol style="margin:6px 0 0 18px;opacity:.85;line-height:1.5">`+d.trace.map(s=>`<li>${esc(s)}</li>`).join("")+`</ol></details>`;
+  }
+  return h;
+}
 async function showDetail(id){
   tab("detail");
   const pane=document.getElementById("pane-detail");
@@ -118,13 +187,13 @@ async function showDetail(id){
   const d=await (await fetch(`${API}/api/symbol/${encodeURIComponent(id)}`)).json();
   if(d.detail){pane.innerHTML="<div class='muted'>not found</div>";return;}
   const n=d.node;
-  const desc=(n.body.match(/## Description\s*\n([\s\S]*?)(\n## |\n$|$)/)||[])[1]||"";
   let h=`<h2>${n.id}</h2><div class="nm">${n.label}</div>`;
   if(n.image) h+=`<img class="sym" src="${API}/${n.image}"/>`;
   if(n.name_fr) h+=`<div class="kv"><b>FR:</b> ${n.name_fr}</div>`;
   if(n.standard) h+=`<div class="kv"><b>Standard:</b> ${n.standard}</div>`;
   if(n.form) h+=`<div class="kv"><b>Form:</b> ${n.form}</div>`;
-  if(desc.trim()) h+=`<div class="sec"><h3>Description</h3><div>${desc.trim()}</div></div>`;
+  const bodyHtml=renderBody(n.body);
+  if(bodyHtml) h+=`<div class="sec body">${bodyHtml}</div>`;
   if(n.source) h+=`<div class="kv" style="margin-top:10px"><b>Source:</b> ${n.source}</div>`;
   const grp={};
   for(const side of ["out","in"]) for(const e of d.neighbors[side]){(grp[e.type]=grp[e.type]||[]).push(e);}
@@ -136,6 +205,32 @@ async function showDetail(id){
   pane.innerHTML=h;
 }
 window.showDetail=showDetail;
+
+async function loadHistory(){
+  const box=document.getElementById("pane-history");
+  box.innerHTML="<div class='muted'>loading…</div>";
+  let d; try{ d=await (await fetch(`${API}/api/history?limit=200`)).json(); }catch(e){ box.innerHTML="<div class='muted'>history unavailable</div>"; return; }
+  if(!d.items||!d.items.length){ box.innerHTML="<div class='muted'>No runs yet — results from the SOW and Ask AI tabs stack here for the team to review.</div>"; return; }
+  let h=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><div class="muted" style="font-size:12px">${d.total} run(s) · newest first</div><button class="go" style="margin:0;padding:4px 10px;font-size:12px" onclick="clearHistory()">Clear</button></div>`;
+  for(const it of d.items){
+    const badge=it.kind==="sow"?"SOW":"Ask";
+    const q=esc((it.query||"").trim());
+    const qshort=q.length>110?q.slice(0,110)+"…":q;
+    const u=it.usage||{};
+    const meta=(u.turns!=null)?` · ${u.turns} steps`+(u.cost_usd!=null?` · $${(u.cost_usd).toFixed(2)}`:""):"";
+    h+=`<details class="hist" style="border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin-bottom:8px">`+
+       `<summary style="cursor:pointer;list-style:none"><span class="id" style="color:var(--accent);font-family:ui-monospace,monospace;font-size:11px">${badge}</span> <span class="muted" style="font-size:11px">${esc(it.ts||"")}${meta}</span><div style="font-size:13px;margin-top:3px">${qshort}</div></summary>`+
+       `<div style="margin-top:8px">`+
+       (q.length>110?`<div class="muted" style="font-size:11px;white-space:pre-wrap;margin-bottom:6px">${q}</div>`:"")+
+       `<div class="ans">${renderAnswer(it.answer||"")}</div>`+
+       renderMeta(it)+
+       (it.citations&&it.citations.length?`<div class="sec"><h3>Pages cited</h3>`+it.citations.map(c=>`<span class="chip" onclick="showDetail('${c.id}')">${c.id}<span class="et">${(c.label||'').slice(0,22)}</span></span>`).join("")+`</div>`:"")+
+       `</div></details>`;
+  }
+  box.innerHTML=h;
+}
+async function clearHistory(){ if(!confirm("Clear all run history for everyone?"))return; await fetch(`${API}/api/history`,{method:"DELETE"}); loadHistory(); }
+window.loadHistory=loadHistory; window.clearHistory=clearHistory;
 
 let st;
 document.getElementById("q").addEventListener("input",e=>{
@@ -156,10 +251,23 @@ document.getElementById("askbtn").onclick=async()=>{
   const box=document.getElementById("answer"); box.innerHTML="<div class='muted'>thinking…</div>";
   const d=await (await fetch(`${API}/api/ask`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({question:q})})).json();
   let h="";
-  if(d.answer) h+=`<div class="ans">${d.answer.replace(/\[(\d\d-[0-9A-Za-z]+-\d\d)\]/g,'<a href="#" onclick="showDetail(\'$1\');return false">[$1]</a>')}</div>`;
+  if(d.answer) h+=`<div class="ans">${renderAnswer(d.answer)}</div>`;
   if(d.note) h+=`<div class="ans-note">${d.note}</div>`;
-  if(d.citations?.length){h+=`<div class="sec"><h3>Relevant symbols</h3>`+d.citations.map(c=>`<span class="chip" onclick="showDetail('${c.id}')">${c.id}</span>`).join("")+`</div>`;}
+  h+=renderMeta(d);
+  if(d.citations?.length){h+=`<div class="sec"><h3>Pages cited</h3>`+d.citations.map(c=>`<span class="chip" onclick="showDetail('${c.id}')">${c.id}<span class="et">${(c.label||'').slice(0,22)}</span></span>`).join("")+`</div>`;}
   box.innerHTML=h;
+};
+
+document.getElementById("sowbtn").onclick=async()=>{
+  const t=document.getElementById("sowtext").value.trim(); if(!t)return;
+  const box=document.getElementById("sowout"); box.innerHTML="<div class='muted'>analysing…</div>";
+  const d=await (await fetch(`${API}/api/sow`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({text:t})})).json();
+  let h="";
+  if(d.answer) h+=`<div class="ans">${renderAnswer(d.answer)}</div>`;
+  if(d.note) h+=`<div class="ans-note">${d.note}</div>`;
+  h+=renderMeta(d);
+  if(d.citations?.length){h+=`<div class="sec"><h3>${d.answer?"Pages cited":"Relevant pages (keyword match)"}</h3>`+d.citations.map(x=>`<span class="chip" onclick="showDetail('${x.id}')">${x.id}<span class="et">${(x.label||'').slice(0,22)}</span></span>`).join("")+`</div>`;}
+  box.innerHTML=h||"<div class='muted'>no matches</div>";
 };
 
 (async()=>{
@@ -167,12 +275,12 @@ document.getElementById("askbtn").onclick=async()=>{
   document.getElementById("stat").innerHTML=`${hh.nodes} nodes · ${hh.edges} edges · AI ${hh.llm?"on ("+hh.model+")":"off (set ANTHROPIC_API_KEY)"}`;
   // part selector
   const ps=document.getElementById("partsel");
-  [["","All parts"],["2","Part 2 · elements"],["3","Part 3 · conductors"],["6","Part 6 · machines"],["7","Part 7 · switchgear"],["8","Part 8 · measuring"],["9","Part 9 · telecom"],["13","Part 13 · analogue"]].forEach(([v,l])=>{if(v==="")return;const o=document.createElement("option");o.value=v;o.textContent=l;ps.appendChild(o);});
+  [["","All parts"],["standards","📄 Standards (docs)"],["2","Part 2 · elements"],["3","Part 3 · conductors"],["6","Part 6 · machines"],["7","Part 7 · switchgear"],["8","Part 8 · measuring"],["9","Part 9 · telecom"],["13","Part 13 · analogue"]].forEach(([v,l])=>{if(v==="")return;const o=document.createElement("option");o.value=v;o.textContent=l;ps.appendChild(o);});
   ps.onchange=()=>loadGraph(ps.value);
   // legend
   document.getElementById("legend").innerHTML=Object.entries({"Part 2":"2","Part 3":"3","Part 6":"6","Part 7":"7","Part 8":"8","Part 9":"9","Part 13":"13"}).map(([l,p])=>`<div class="row"><span class="dot" style="background:${PARTCOLOR[p]}"></span>${l}</div>`).join("")+`<div class="row"><span class="dot" style="background:#fff"></span>standard</div><div class="row"><span class="dot" style="background:#9aa7b3"></span>section</div>`;
-  await loadGraph("3"); // default: a readable single part
-  ps.value="3";
+  await loadGraph(""); // default: all parts, so every part shows its colour
+  ps.value="";
 })();
 </script>
 </body>

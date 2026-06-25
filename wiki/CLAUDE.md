@@ -9,6 +9,84 @@ publications. It follows the *LLM Wiki* pattern: the raw PDFs in
 You (the LLM) own this directory entirely. The human curates sources and asks
 questions. Read this file at the start of every session.
 
+## ★ The LLM-Wiki pattern — READ FIRST (the method this wiki MUST follow)
+
+This project follows the *LLM Wiki* pattern (see `../LLM Wiki.md`). The whole
+point of the pattern is to **replace RAG** with a curated, interlinked wiki that
+the LLM navigates. Internalise these rules — two were violated early and corrected:
+
+1. **Compounding artifact, not re-derived per query.** The wiki is built once and
+   kept current. Knowledge is *compiled* into structured pages; cross-references,
+   contradictions, and synthesis are already in place. Don't rebuild understanding
+   on each question.
+
+2. **Decompose every source into entity / concept pages — DON'T monolith.**
+   The wiki is *"Summaries, entity pages, concept pages, comparisons, an overview,
+   a synthesis."* Ingesting one source *"might touch 10-15 wiki pages"* — it
+   *"updates relevant entity and concept pages across the wiki."* So break a source
+   into the **things it talks about**, each getting its **own page**, all
+   interlinked. A symbol → its own page. A standard's definitions, protection
+   types, key topics → each its own concept page (see `iec-79-19` + its ~11 concept
+   pages as the template). **Never cram a whole document into one page.** Lint
+   explicitly flags *"important concepts mentioned but lacking their own page."*
+
+   **Granularity scales with the SOURCE, not a fixed number.** The "10-15 pages"
+   figure is for a *typical article/chapter* — it is NOT a cap. A dense reference
+   standard is far denser and needs far more. **Derive the page list from the
+   source's OWN structure:** its definitions/glossary clause, its enumerated
+   characteristics, its list of tests, its table of contents → make a page per
+   defined term and per enumerated item. Do NOT hand-pick a "headline" subset.
+   *Worked example of the failure:* IEC 56 (182 pp) was first done as ~16 pages by
+   skimming the top-level concepts; its formal definitions clause (3.101–3.105) +
+   all rated characteristics (clause 4) + all tests (clause 6) actually yield **60+
+   concept pages**. **Red flag: a long, dense source that produced only a handful
+   of pages is under-decomposed — go back and mine its definitions and lists.**
+
+   **Decomposition AND depth — breadth is only half.** Splitting into many pages
+   is worthless if each page is a one-line stub. The original pattern is about
+   *synthesis*: *"revising topic summaries… strengthening the evolving
+   synthesis,"* a wiki that *"keeps getting richer,"* *"a rich companion wiki."*
+   So **every page must be a substantive synthesis from the source**, not a
+   dictionary entry: the definition PLUS the actual requirements/values, the
+   clause content, how it relates to other pages, applicable tests/conditions,
+   contradictions, and citations. A bare IEV/glossary one-liner is a stub, not a
+   concept page. **Never batch-generate pages from a list of one-line definitions**
+   — that is the shortcut that produces stubs; read the source clause and write
+   the page from it. Target ≳80–150 words of real content per concept page (cf.
+   the [[iec-79-19]] component pages). **Red flag: average page is ~30 words / one
+   sentence = thin stubs; go back to the source and enrich.** Breadth × depth.
+
+3. **Query = navigation, NOT embeddings/RAG.** Answer by: read `index.md` (the
+   catalog) → find relevant pages → read them → follow their wikilinks → synthesise
+   with citations. The pattern *"avoids the need for embedding-based RAG
+   infrastructure."* **Do NOT build vector stores / TF-IDF / chunk-and-embed
+   pipelines.** The app's `/api/ask` and `/api/sow` are LLM agents that navigate
+   the wiki via `search_wiki` + `read_pages` tools — that is the only retrieval.
+   (A keyword index like SQLite FTS5 is allowed only as a "grep the wiki" tool, not
+   as the answerer.) Good query answers may be **filed back as new wiki pages**.
+
+4. **Three operations.** *Ingest* (read source → write its entity/concept pages →
+   update `index.md` → append `log.md`). *Query* (navigate as above). *Lint* (a
+   real health-check: contradictions between pages, stale claims, **orphan pages**,
+   **concepts lacking their own page**, missing cross-references, data gaps — not
+   just broken-link checks).
+
+5. **Index & log.** `index.md` is the content catalog the agent reads first;
+   `log.md` is the append-only chronological record. Keep both current on ingest.
+
+**Common mistakes (already made — do not repeat):** (a) building a TF-IDF/vector
+RAG layer instead of LLM-navigation; (b) representing a standard as one big page;
+(c) **under-decomposing** — treating "10-15 pages/source" as a cap and skimming a
+dense source into a handful of pages (IEC 56: did 16, needed 60+). Root cause of
+(c): anchoring on a page-count number instead of decomposing to the source's own
+definitions/enumerations. Fix: page count scales with the source's density.
+(d) **thin stub pages** — decomposing into many pages but leaving each a one-line
+IEV/glossary definition (IEC 56: 60 pages averaging ~30 words). Root cause:
+optimizing the metric the schema stressed (page count) while it said nothing about
+per-page depth; plus batch-generating from a one-line-definition list. Fix: every
+page is a substantive synthesis read from the source clause (see rule 2, "breadth
+× depth").
+
 ## Layers
 
 - **Raw sources** — `../Standards-Reference/*.pdf`. Scanned image PDFs (no text

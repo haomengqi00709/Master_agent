@@ -72,6 +72,17 @@ for sid,label,title in FAM:
     out.append(f"| {link} | {title} | {status} |")
 out+=["","Related standards referenced by symbols: **IEC 445, 27, 375, 364-3, 113, 416/417, 750, 1082, ISO 31, ISO 128**.",""]
 
+# non-60617 standard documents (specs/procedures distilled into the wiki)
+other=[s for s in std if not s.startswith("60617")]
+if other:
+    out+=["## Other standards (full documents) <a id=\"docs\"></a>","",
+          "Specification / procedure standards distilled into wiki pages (scope, definitions,",
+          "clause map, cross-links to symbols) — navigate these for non-symbol questions and SOWs.",""]
+    for sid in sorted(other):
+        d=std[sid]
+        out.append(f"- [[{sid}]] — {d.get('title_en', sid)} ({d.get('edition','')})")
+    out.append("")
+
 # concepts
 con=sorted(glob.glob(os.path.join(WIKI,"concepts","*.md")))
 if con:

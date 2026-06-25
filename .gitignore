@@ -3,6 +3,10 @@ Standards-Reference/
 *.pdf
 *.zip
 
+# OCR'd full text of the standards — near-verbatim copyrighted IEC text, and NOT
+# needed at runtime (the app navigates the wiki/, not corpus/). Kept local only.
+kg-app/backend/corpus/
+
 # derived data layer — regenerated at startup by kg-app/backend/build_kg.py
 kg-app/backend/data/
 

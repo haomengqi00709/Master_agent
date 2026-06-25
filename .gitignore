@@ -7,8 +7,10 @@ Standards-Reference/
 # needed at runtime (the app navigates the wiki/, not corpus/). Kept local only.
 kg-app/backend/corpus/
 
-# derived data layer — regenerated at startup by kg-app/backend/build_kg.py
-kg-app/backend/data/
+# derived data layer — graph.json / kg.sqlite are regenerated at startup by
+# build_kg.py; history.jsonl is kept so the demo runs show for the partner online.
+kg-app/backend/data/*
+!kg-app/backend/data/history.jsonl
 
 # python / os / misc
 __pycache__/

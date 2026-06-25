@@ -47,6 +47,23 @@
   #ctrls select{width:auto;font-size:12px;padding:5px 8px}
   .muted{color:var(--mut)}
   a{color:var(--accent)}
+  /* History cards + run popup (partner demo) */
+  .badge{display:inline-block;background:var(--accent);color:#04101f;font-weight:700;font-size:10px;border-radius:4px;padding:1px 7px;vertical-align:middle}
+  .histcard{border:1px solid var(--line);border-radius:9px;padding:10px 12px;margin-bottom:8px;cursor:pointer;transition:border-color .12s,background .12s}
+  .histcard:hover{border-color:var(--accent);background:#0c1116}
+  .modal-bg{position:fixed;inset:0;background:rgba(4,8,12,.74);z-index:50;display:none;align-items:flex-start;justify-content:center;padding:38px 16px;overflow:auto}
+  .modal-bg.show{display:flex}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:12px;max-width:880px;width:100%;box-shadow:0 24px 70px rgba(0,0,0,.55)}
+  .modal .mhead{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:15px 22px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--panel);border-radius:12px 12px 0 0;z-index:2}
+  .modal .mhead h2{margin:0;font-size:14px;font-weight:600}
+  .modal .x{background:none;border:none;color:var(--mut);font-size:24px;cursor:pointer;line-height:1;flex:none}
+  .modal .x:hover{color:var(--fg)}
+  .modal .mbody{padding:18px 24px 28px;max-height:calc(88vh - 56px);overflow:auto}
+  .modal .mbody .ans{font-size:14px;line-height:1.65}
+  .mlabel{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--mut);margin:14px 0 5px}
+  .mlabel:first-child{margin-top:0}
+  .qbox{background:#0c1116;border-left:3px solid var(--accent);border-radius:6px;padding:11px 13px;font-size:13.5px;white-space:pre-wrap}
+  .steps{margin:6px 0 0;padding-left:20px;font-size:12.5px;color:var(--mut);line-height:1.75;font-family:ui-monospace,monospace}
 </style>
 </head>
 <body>
@@ -88,6 +105,12 @@
     </div>
     <div id="legend"></div>
     <div id="fgcanvas"></div>
+  </div>
+</div>
+<div class="modal-bg" id="modal" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="mhead"><h2 id="mtitle"></h2><button class="x" onclick="closeModal()" title="Close (Esc)">×</button></div>
+    <div class="mbody" id="mbody"></div>
   </div>
 </div>
 <script>
@@ -206,31 +229,48 @@ async function showDetail(id){
 }
 window.showDetail=showDetail;
 
+let HISTRUNS=[];
 async function loadHistory(){
   const box=document.getElementById("pane-history");
   box.innerHTML="<div class='muted'>loading…</div>";
   let d; try{ d=await (await fetch(`${API}/api/history?limit=200`)).json(); }catch(e){ box.innerHTML="<div class='muted'>history unavailable</div>"; return; }
-  if(!d.items||!d.items.length){ box.innerHTML="<div class='muted'>No runs yet — results from the SOW and Ask AI tabs stack here for the team to review.</div>"; return; }
-  let h=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><div class="muted" style="font-size:12px">${d.total} run(s) · newest first</div><button class="go" style="margin:0;padding:4px 10px;font-size:12px" onclick="clearHistory()">Clear</button></div>`;
-  for(const it of d.items){
+  HISTRUNS=d.items||[];
+  if(!HISTRUNS.length){ box.innerHTML="<div class='muted'>No runs yet — results from the SOW and Ask AI tabs stack here for the team to review.</div>"; return; }
+  let h=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><div class="muted" style="font-size:12px">${d.total} run(s) · click any to open</div><button class="go" style="margin:0;padding:4px 10px;font-size:12px" onclick="clearHistory()">Clear</button></div>`;
+  HISTRUNS.forEach((it,i)=>{
     const badge=it.kind==="sow"?"SOW":"Ask";
     const q=esc((it.query||"").trim());
-    const qshort=q.length>110?q.slice(0,110)+"…":q;
+    const qshort=q.length>120?q.slice(0,120)+"…":q;
     const u=it.usage||{};
-    const meta=(u.turns!=null)?` · ${u.turns} steps`+(u.cost_usd!=null?` · $${(u.cost_usd).toFixed(2)}`:""):"";
-    h+=`<details class="hist" style="border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin-bottom:8px">`+
-       `<summary style="cursor:pointer;list-style:none"><span class="id" style="color:var(--accent);font-family:ui-monospace,monospace;font-size:11px">${badge}</span> <span class="muted" style="font-size:11px">${esc(it.ts||"")}${meta}</span><div style="font-size:13px;margin-top:3px">${qshort}</div></summary>`+
-       `<div style="margin-top:8px">`+
-       (q.length>110?`<div class="muted" style="font-size:11px;white-space:pre-wrap;margin-bottom:6px">${q}</div>`:"")+
-       `<div class="ans">${renderAnswer(it.answer||"")}</div>`+
-       renderMeta(it)+
-       (it.citations&&it.citations.length?`<div class="sec"><h3>Pages cited</h3>`+it.citations.map(c=>`<span class="chip" onclick="showDetail('${c.id}')">${c.id}<span class="et">${(c.label||'').slice(0,22)}</span></span>`).join("")+`</div>`:"")+
-       `</div></details>`;
-  }
+    const meta=(u.turns!=null?` · ${u.turns} steps`:"")+(u.cost_usd!=null?` · $${(u.cost_usd).toFixed(2)}`:"")+(it.citations?` · ${it.citations.length} pages`:"");
+    h+=`<div class="histcard" onclick="openRunModal(HISTRUNS[${i}])"><span class="badge">${badge}</span> <span class="muted" style="font-size:11px">${esc(it.ts||"")}${meta}</span><div style="font-size:13px;margin-top:4px">${qshort}</div></div>`;
+  });
   box.innerHTML=h;
 }
+function openRunModal(r){
+  if(!r) return;
+  const u=r.usage||{}, badge=r.kind==="sow"?"SOW":"ASK";
+  const bits=[]; if(u.turns!=null)bits.push(u.turns+" steps"); if(u.cost_usd!=null)bits.push("$"+(u.cost_usd).toFixed(2)); if(r.citations)bits.push(r.citations.length+" pages cited");
+  document.getElementById("mtitle").innerHTML=`<span class="badge">${badge}</span> <span class="muted" style="font-size:12px;font-weight:400">${esc(r.ts||"")}${bits.length?" · "+bits.join(" · "):""}</span>`;
+  let h=`<div class="mlabel">${r.kind==="sow"?"Statement of Work":"Question"}</div><div class="qbox">${esc((r.query||"").trim())}</div>`;
+  h+=`<div class="mlabel">Answer</div><div class="ans">${renderAnswer(r.answer||"")}</div>`;
+  if(r.trace&&r.trace.length){
+    const reads=r.trace.filter(s=>s.indexOf("Read")===0).length;
+    h+=`<div class="sec"><h3>How it navigated the knowledge base — ${r.trace.length} steps, ${reads} pages read</h3><ol class="steps">`+r.trace.map(s=>`<li>${esc(s)}</li>`).join("")+`</ol></div>`;
+  } else {
+    h+=`<div class="ans-note">Step-by-step trace not retained for this run; live runs record the full navigation trace.</div>`;
+  }
+  if(r.citations&&r.citations.length){
+    h+=`<div class="sec"><h3>Pages cited (${r.citations.length})</h3>`+r.citations.map(c=>`<span class="chip" onclick="closeModal();showDetail('${c.id}')">${c.id}<span class="et">${esc((c.label||'').slice(0,24))}</span></span>`).join("")+`</div>`;
+  }
+  document.getElementById("mbody").innerHTML=h;
+  document.getElementById("mbody").scrollTop=0;
+  document.getElementById("modal").classList.add("show");
+}
+function closeModal(){ document.getElementById("modal").classList.remove("show"); }
+addEventListener("keydown",e=>{ if(e.key==="Escape") closeModal(); });
 async function clearHistory(){ if(!confirm("Clear all run history for everyone?"))return; await fetch(`${API}/api/history`,{method:"DELETE"}); loadHistory(); }
-window.loadHistory=loadHistory; window.clearHistory=clearHistory;
+window.loadHistory=loadHistory; window.clearHistory=clearHistory; window.openRunModal=openRunModal; window.closeModal=closeModal;
 
 let st;
 document.getElementById("q").addEventListener("input",e=>{

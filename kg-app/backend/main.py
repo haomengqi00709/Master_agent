@@ -198,7 +198,7 @@ def wiki_agent(task, framing, max_steps=6):
         messages.append({"role": "user", "content": results})
     return {"answer": "(stopped after max navigation steps)", "pages": read_ids}
 
-def claude_cli_agent(task, framing, timeout=300):
+def claude_cli_agent(task, framing, timeout=480):
     """Run the wiki-navigation through the local Claude Code CLI — no API key
     needed (uses the CLI's own auth). The CLI runs INSIDE the wiki dir, so it
     navigates the markdown with its own Read/Grep/Glob tools: reads index.md,

@@ -121,14 +121,23 @@ const PARTCOLOR={"2":"#e0607e","3":"#4ea1ff","6":"#f2c14e","7":"#5fd38b","8":"#b
 const typeColor=n=> n.type==="standard"?"#ffffff":n.type==="section"?"#9aa7b3":n.type==="concept"||n.type==="reference"?"#c7a0ff":(PARTCOLOR[n.part]||"#6b7785");
 const PART_PALETTE=["#e0607e","#4ea1ff","#f2c14e","#5fd38b","#b07be0","#46c7c7","#ff9f55","#7ed0a0","#e08fce","#8fa8e0","#d4b483","#6fcf97","#cf6f6f"];
 function buildPartControls(){
-  // derive the parts (+ colours, dropdown, legend) from the loaded graph so new parts auto-appear
-  const parts=[...new Set(Object.values(NODES).filter(n=>n.type==="symbol"&&n.part!=null).map(n=>String(n.part)))]
+  // derive parts, colours, dropdown (symbol parts + each standard), legend from the graph
+  const all=Object.values(NODES);
+  const parts=[...new Set(all.filter(n=>n.type==="symbol"&&n.part!=null).map(n=>String(n.part)))]
     .sort((a,b)=>{const na=/^\d+$/.test(a),nb=/^\d+$/.test(b);return na&&nb?(+a-+b):a.localeCompare(b);});
   parts.forEach((p,i)=>{ if(!PARTCOLOR[p]) PARTCOLOR[p]=PART_PALETTE[i%PART_PALETTE.length]; });
+  const stds=all.filter(n=>n.type==="standard"&&!String(n.id).startsWith("60617"))
+    .sort((a,b)=>String(a.id).localeCompare(String(b.id)));
+  const mk=(v,t)=>{const o=document.createElement("option");o.value=v;o.textContent=t;return o;};
   const ps=document.getElementById("partsel");
-  ps.innerHTML='<option value="">All parts</option><option value="standards">📄 Standards (docs)</option>';
-  parts.forEach(p=>{ const std=NODES["60617-"+p]; const t=std&&std.label?(" · "+std.label.slice(0,26)):"";
-    const o=document.createElement("option"); o.value=p; o.textContent="Part "+p+t; ps.appendChild(o); });
+  ps.innerHTML='<option value="">All (everything)</option>';
+  const ogP=document.createElement("optgroup"); ogP.label="Symbol parts (IEC 60617) — "+parts.length;
+  parts.forEach(p=>{ const s=NODES["60617-"+p]; const t=s&&s.label?(" · "+s.label.slice(0,24)):""; ogP.appendChild(mk(p,"Part "+p+t)); });
+  ps.appendChild(ogP);
+  const ogS=document.createElement("optgroup"); ogS.label="Standards (text) — "+stds.length;
+  ogS.appendChild(mk("standards","📄 All standards (overview)"));
+  stds.forEach(s=>ogS.appendChild(mk("std:"+s.id, s.id+(s.label?" · "+s.label.slice(0,32):""))));
+  ps.appendChild(ogS);
   document.getElementById("legend").innerHTML=
     parts.map(p=>`<div class="row"><span class="dot" style="background:${PARTCOLOR[p]}"></span>Part ${p}</div>`).join("")
     +`<div class="row"><span class="dot" style="background:#fff"></span>standard</div>`
@@ -144,7 +153,7 @@ function tab(t){
 document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{tab(b.dataset.t); if(b.dataset.t==="history") loadHistory();});
 
 async function loadGraph(sel){
-  const qs = sel==="standards" ? "?docs=1" : (sel ? "?part="+sel : "");
+  const qs = sel==="standards" ? "?docs=1" : (sel&&sel.indexOf("std:")===0) ? "?standard="+encodeURIComponent(sel.slice(4)) : (sel ? "?part="+sel : "");
   const g=await (await fetch(`${API}/api/graph${qs}`)).json();
   NODES={}; g.nodes.forEach(n=>NODES[n.id]=n);
   const el=document.getElementById("graph");

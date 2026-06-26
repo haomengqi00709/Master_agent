@@ -112,13 +112,23 @@ def health():
             "llm": mode != "off", "mode": mode, "model": model}
 
 @app.get("/api/graph")
-def graph(part: str = Query(None), type: str = Query(None), docs: bool = Query(False)):
+def graph(part: str = Query(None), type: str = Query(None), docs: bool = Query(False),
+          standard: str = Query(None)):
     """Lightweight graph for visualisation (no full body text). docs=1 shows the
     document standards (non-60617, e.g. iec-79-19) together with their 1-hop
-    neighbourhood — the symbols/concepts they cross-link to."""
+    neighbourhood. standard=<id> shows ONE standard's cluster (its concept pages
+    plus their cross-linked symbols/standards = a 2-hop ego network)."""
     keep = ["id","type","label","part","section","is_example","form","image"]
     nodes = GRAPH["nodes"]
-    if docs:
+    if standard:
+        ego = {standard}
+        for _ in range(2):  # 2 hops: standard -> its concepts -> their neighbours
+            frontier = set(ego)
+            for e in GRAPH["edges"]:
+                if e["source"] in frontier: ego.add(e["target"])
+                if e["target"] in frontier: ego.add(e["source"])
+        nodes = [n for n in nodes if n["id"] in ego]
+    elif docs:
         seeds = {n["id"] for n in nodes if n["type"] == "standard" and not n["id"].startswith("60617")}
         ego = set(seeds)
         for e in GRAPH["edges"]:

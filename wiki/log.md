@@ -180,12 +180,12 @@ Two frontend/backend fixes after the user couldn't see enriched content / wanted
 1. **Detail panel rendered nothing for concept/standard pages** — it only extracted a
    `## Description` section (symbols have it, concept/standard pages don't), so their rich
    bodies were invisible. Added `renderBody()` (renders ## / - / **bold** / clickable
-   [[links]]) and a `renderAnswer()` for Ask/SOW answers. Backend now serves index.html
+   wikilinks) and a `renderAnswer()` for Ask/SOW answers. Backend now serves index.html
    with `Cache-Control: no-cache` so frontend edits show on a normal reload.
 2. **Local AI with no ANTHROPIC_API_KEY**: backend `ai_mode()` = api (SDK) → cli (local
    `claude` binary) → off. New `claude_cli_agent()` shells out to `claude -p` with cwd=wiki,
    `--allowedTools Read Grep Glob`, navigation system prompt; the CLI reads index.md, greps,
-   follows [[links]], and (bonus) picks up wiki/CLAUDE.md. Citations parsed from inline [id]
+   follows wikilinks, and (bonus) picks up wiki/CLAUDE.md. Citations parsed from inline [id]
    refs + a `CITED:` line, resolved against NODES. /api/health reports mode + "Claude CLI".
    On deploy (no CLI) others just set ANTHROPIC_API_KEY → SDK path. Tested: "what does symbol
    07-13-05 represent + which standard defines its ratings/tests" → in 35 s the CLI linked
@@ -206,3 +206,106 @@ data/history.jsonl (best-effort); GET /api/history (newest-first) + DELETE clear
 Frontend History tab stacks runs (kind badge, ts, query, rendered answer, trace,
 usage, cited-page chips) — a shared internal review log. Backfilled the 5
 validation runs (citations reconstructed from answers; trace not retained for those).
+
+## [2026-06-25] ingest | IEC 56 Amendment 1 (1992-11)
+Ingested Amendment 1 to IEC 56 (corpus/iec-56-1.txt). Per the method an amendment
+gets no standard hub: created concepts/iec-56-amendment-1.md with a clause-by-clause
+summary of the changes (clauses 4.101.2, 6 intro, 6.1.7, 6.101.1.3/3.3/3.4, 6.102.4/
+8.1/9, 6.104.2/3/7, 6.105.1, 6.106(+4a), 6.109.5, 6.111.2/8.1/9, Figs 19/20/28/29/30/
+32→32a-b, Appx EE EE1.4.1.1, Appx GG Fig GG9; cites IEC 427 + IEC 694 6.1.11).
+Added an "## Amendments" section to standards/iec-56.md and an "Amended (1992, Amd. 1)"
+line to 11 affected concept pages: rated-short-circuit-breaking-current, type-test,
+dielectric-test, mechanical-and-environmental-test, short-circuit-test,
+short-circuit-test-procedure, short-circuit-test-quantities,
+rated-short-circuit-making-current, test-duty, single-phase-short-circuit-test,
+short-line-fault-test, capacitive-current-switching-test. Registered the new page in
+index.md (under iec-56 and in the concept list). No new defined terms/ratings in the
+amendment, so no genuinely-new concept page was warranted (Test-duty No. 4a / 4b and
+SLF duties L90/L75 are folded into the existing test-duty + short-line-fault-test pages).
+
+## [2026-06-25] ingest | IEC 56-2 (3rd ed, 1971) Part 2: Rating
+Ingested IEC Publication 56-2 (corpus/iec-56-2.txt), the standalone ratings part of
+the earlier six-part edition of IEC 56. Treated as an earlier edition of the 4th-ed
+clause-4 ratings (NOT a parallel standard) per the no-duplication rule. Created one
+concept page concepts/iec-56-2-rated-characteristics.md (tags concept/iec-56/ratings):
+states what Part 2 is, its 1.1/1.2/1.3 three-tier list of rated characteristics, the
+relationship to the consolidated 4th edition, and indexes every corresponding rated-*
+concept page via wikilinks. Enriched 3 existing pages with substantive Part-2 detail
+genuinely missing from them: rated-voltage (added the standard rated-voltage value
+lists, Series I/II ≤72.5 kV and the above-72.5 list to 765 kV + 550 kV NA note, §2);
+rated-duration-of-short-circuit (added the standard 1 s / 3 s values, §10); short-line-
+fault (added Table VII surge impedances 480/375/330 Ω with peak factors by conductors,
+the Amd.1-to-56-2 single 450 Ω / k=1.6 revision, and the Appendix A SLF-TRV derivation,
+§8). Added "## Related parts / editions" to standards/iec-56.md linking the new page;
+registered it in index.md (under the iec-56 standard entry and in the concept list).
+Content already fully covered (no change): rated-insulation-level, rated-frequency,
+rated-normal-current, rated-short-circuit-breaking-current, transient-recovery-voltage,
+rated-short-circuit-making-current, rated-operating-sequence, rated-line-charging /
+rated-cable-charging / capacitor / small-inductive / out-of-phase breaking-current pages.
+The 56-2 supply-voltage/frequency (Tables X-XII), compressed-gas pressure (§20) and
+co-ordination tables (§21) clauses are noted within the new page; no separate stub
+pages created (they are minor/non-mandatory and the 4th-ed equivalents defer to IEC 694).
+
+## [2026-06-25] ingest | IEC 56 supplements + IEC 79 Ex-protection family (Claude, one-by-one)
+Traversing the remaining un-ingested source PDFs with thorough Claude subagents.
+- **IEC 56 Amendment 1 (1992)** → folded into [[iec-56]] per the amendment pattern:
+  new [[iec-56-amendment-1]] summary page + 11 affected concept pages annotated
+  (20 clauses; corrigenda + test-procedure revisions, no new standalone concepts).
+- **IEC 56-2 "Part 2: Rated characteristics" (3rd ed)** → [[iec-56-2-rated-characteristics]]
+  + enriched [[rated-voltage]]/[[rated-duration-of-short-circuit]]/[[short-line-fault]]
+  with genuinely-missing value tables; rest already covered (no duplication).
+- **IEC 79 family** (new sibling standards of [[iec-79-19]], parallel Claude subagents,
+  each writing only its own files):
+  - [[iec-79-3]] Spark-test apparatus (intrinsic safety) — 18 concept pages (source-grounded).
+  - [[iec-79-4]] (+ [[iec-79-4a]] amendment) Ignition-temperature test method — 15 pages (grounded).
+  - [[iec-79-18]] Encapsulation "m" — 24 pages + new [[type-of-protection-m]] (grounded).
+  - [[iec-79-1]] Flameproof "d" — 21 pages BUT ⚠ the local PDF is front-matter only
+    (5 pp, no clause body); pages reconstructed from structure/knowledge, NOT the source.
+    Hub carries a PROVENANCE warning; pending a full PDF or a decision to remove.
+Graph now 1051 nodes (concept 118→196, standards 10→14). Lint clean (only documented
+forward-refs incl. not-yet-ingested 79-0/79-2/79-11). Background-OCR'd all 19 remaining
+text standards. Still pending: 529, 73, 99, reference/doc set, 617-10, binary-logic cluster.
+
+## [2026-06-25] ingest | IEC 529 (IP code), IEC 73 (colours), IEC 99-1/99-4 (surge arresters)
+Continued the traversal (Claude subagents, source-grounded, one family at a time):
+- **IEC 529** "Degrees of protection (IP Code)" → [[iec-529]] + 22 concept pages
+  (IP first numeral 0–6, second numeral 0–8, additional/supplementary letters, tests).
+  529-1=2nd ed (IP Code), 529-2=1st ed (1976). Cross-linked to [[iec-79-19]] IP54 entries.
+- **IEC 73** "Colours of indicator lights and push-buttons" → [[iec-73]] + 21 pages
+  (red/yellow/green/blue/white meanings, push-button colours). 73-1 = partial re-scan
+  of same edition (no new content). Cross-linked to [[08-10-01]] lamp, [[07-07-02]] push-button.
+- **IEC 99-1** non-linear-resistor (gapped) arresters → [[iec-99-1]] + 27 pages (99-1A
+  amendment folded in). **IEC 99-4** metal-oxide (gapless) arresters → [[iec-99-4]] + 37 pages.
+  Both cross-linked to arrester symbol [[07-22-03]] / gap [[07-22-01]].
+NOTE/LESSON: 99-1 and 99-4 share many arrester concepts; run in parallel they edited
+each other's pages — verified no clobbering (frontmatter intact, both contents present,
+0 broken links) but henceforth overlapping standards go SEQUENTIAL not parallel.
+Also: IEC 79-1 reconstructed pages REMOVED (source was front-matter only); hub is a stub.
+
+## [2026-06-25] ingest | reference/documentation standards (IEC 1082, 113-1, 387, 750)
+Final text-standard batch (Claude subagents, strict create-only to avoid parallel races):
+- **IEC 1082** "Preparation of documents used in electrotechnology" (Parts 1/2/3) →
+  [[iec-1082]] + 16 pages (document classes, the =/+/-/: reference-designation system,
+  function- vs location-oriented diagrams, connection/cable diagrams).
+- **IEC 113-1** "Diagrams, charts, tables" → [[iec-113-1]] + 20 pages (diagram/chart/table
+  definitions & representation classes; superseded by IEC 1082, noted).
+- **IEC 387** "Symbols for a.c. electricity meters" (TC-13) → [[iec-387]] + 26 pages
+  (meter measuring-element/unit/tariff/auxiliary symbols), cross-linked to 60617-8 meters.
+- **IEC 750** "Item designation in electrotechnology" → [[iec-750]] + 10 pages (the =/+/-/:
+  designation blocks, kind-of-item letter codes). NOTE: 750 OCR was badly garbled (rotated
+  multi-column); Table I letter codes partly reconstructed from legible parts + canonical
+  set — flagged in-page. 1082/113 slug collision avoided (distinct slugs, both coexist).
+ALL 14 remaining TEXT/spec standards now ingested. Graph 1217 nodes (354 concepts,
+22 standards), lint clean. Remaining: symbol parts 617-10 (vision) + binary-logic cluster.
+
+## [2026-06-26] ingest | IEC 60617-10 Telecommunications: Transmission (vision pipeline)
+Symbol part via the vision pipeline (render+orient → 5 parallel Claude vision-readers
+over page ranges → gen_part). **232 symbols across 24 sections** (10-01-01…10-24-02):
+lines/circuits, antennas & radio/space stations, microwave components (waveguides,
+1-/2-/multi-port devices, couplers, masers/lasers), signal generators, amplifiers,
+networks, modulators, concentrators/multiplexers, frequency/spectrum symbols, fibre
+optics. Page-level images (assets/60617-10/p*.png). Section titles from a dedicated
+header-scan subagent. Graph 1474 nodes (970 symbols, 23 standards). Previously-broken
+forward-refs 10-06-03/04, 10-15-01/02 and the [[60617-10]] hub now RESOLVE. Remaining
+broken links = only forward-refs to genuinely-missing parts 617-4/5 + the known 617-13
+§1–4 gap. Last remaining: binary-logic cluster 60617-12 (253pp, dependency notation).

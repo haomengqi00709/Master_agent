@@ -1,0 +1,13 @@
+{
+"id": "60617-10",
+"part": 10,
+"title_en": "Telecommunications: Transmission",
+"title_fr": "Télécommunications: Transmission",
+"standard": "IEC 60617-10 (formerly IEC 617-10)",
+"edition": "1st edition, 1983",
+"source": "Publication No.617-10.pdf",
+"pages": 51,
+"image_mode": "page",
+"src_dir": "/private/tmp/claude-501/-Users-jasonhao-Desktop-Trust-AI-Advisory-daniel-s-Electronic-Standards-Reference/b3dbbf10-fcae-4b73-bb3d-3a27c37db6ed/scratchpad/up10",
+"blurb": "Telecommunications transmission symbols: telecommunication circuits and lines, antennas and radio/space stations, microwave components (waveguides, one-/two-/multi-port devices, couplers, masers/lasers), signal generators, amplifiers, networks, frequency/band and spectrum-diagram symbols, and fibre-optic transmission. Heavily cross-references [[60617-2]] qualifying symbols and other parts."
+}

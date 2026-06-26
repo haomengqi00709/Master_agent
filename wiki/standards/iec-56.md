@@ -43,6 +43,21 @@ above 1000 V — making, carrying and breaking normal and short-circuit currents
 
 **Operation** — [[operating-mechanism]]
 
+## Amendments
+- [[iec-56-amendment-1]] — **Amendment 1 (1992-11)**: rewrites several clause-6
+  type-test procedures and acceptance criteria (short-arcing-time single-phase
+  tests 6.102.9, peak making current 6.104.2, basic test-duties 6.106 incl. new
+  No. 4a, short-line-fault duties L90/L75 in 6.109.5, new capacitive "Tests with
+  specified TRV" 6.111.9 + Figures 32a/32b), updates low/high-temperature and
+  tightness tests, and applies figure/notation corrections (E→U). No new ratings.
+
+## Related parts / editions
+- [[iec-56-2-rated-characteristics]] — **IEC 56-2 (3rd ed, 1971), Part 2: Rating**,
+  the standalone ratings part of the earlier six-part edition; its rated
+  characteristics were consolidated into clause 4 of this 4th edition.
+
 ## Related standards
 - Sibling to the IEC 60617-7 switchgear symbols ([[60617-7]]); the circuit-breaker
   in IEC 56 is what symbol [[07-13-05]] represents.
+- References **IEC 427** (synthetic testing) and **IEC 694** (common clauses) —
+  cited by [[iec-56-amendment-1]].

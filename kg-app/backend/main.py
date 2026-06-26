@@ -8,7 +8,7 @@ Run:  uvicorn main:app --reload --port 8000
 Env:  ANTHROPIC_API_KEY (optional — enables LLM answers; otherwise /ask returns
       retrieval-only results).  KG_MODEL (default claude-sonnet-4-6).
 """
-import os, re, json, sqlite3, shutil, subprocess, datetime
+import os, re, json, sqlite3, shutil, subprocess, datetime, time, urllib.request, urllib.error
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
@@ -20,15 +20,35 @@ DATA = os.path.join(HERE, "data")
 HIST = os.path.join(DATA, "history.jsonl")  # append-only log of Ask/SOW runs (shared review log)
 WIKI = os.path.abspath(os.path.join(HERE, "..", "..", "wiki"))
 ASSETS = os.path.join(WIKI, "assets")
+
+def _load_env():
+    """Load KEY=VALUE lines from kg-app/backend/.env (gitignored) into the env, so
+    API keys (ANTHROPIC_API_KEY / GEMINI_API_KEY) can live in a local file."""
+    try:
+        for line in open(os.path.join(HERE, ".env")):
+            line = line.strip()
+            if line and not line.startswith("#") and "=" in line:
+                k, v = line.split("=", 1)
+                os.environ.setdefault(k.strip(), v.strip().strip('"').strip("'"))
+    except FileNotFoundError:
+        pass
+_load_env()
+
 MODEL = os.environ.get("KG_MODEL", "claude-sonnet-4-6")
+GEMINI_MODEL = os.environ.get("KG_GEMINI_MODEL", "gemini-2.5-flash")
 # Local Claude Code CLI fallback: lets the wiki-navigation agent run WITHOUT an
 # ANTHROPIC_API_KEY by shelling out to the user's `claude` CLI (uses its own auth).
 # Disable with KG_NO_CLAUDE_CLI=1.
 CLAUDE_BIN = None if os.environ.get("KG_NO_CLAUDE_CLI") else shutil.which("claude")
 
 def ai_mode():
-    """'api' = Anthropic SDK (needs key); 'cli' = local claude CLI; 'off' = keyword only."""
+    """Which backend answers /api/ask + /api/sow. Override with KG_AI=api|gemini|cli|off.
+    Default priority: Anthropic SDK -> Gemini API -> local claude CLI -> keyword-only."""
+    forced = os.environ.get("KG_AI", "").strip().lower()
+    if forced in ("api", "gemini", "cli", "off"):
+        return forced
     if os.environ.get("ANTHROPIC_API_KEY"): return "api"
+    if os.environ.get("GEMINI_API_KEY"): return "gemini"
     if CLAUDE_BIN: return "cli"
     return "off"
 
@@ -87,9 +107,9 @@ def fts_query(con, q, cols, limit):
 @app.get("/api/health")
 def health():
     mode = ai_mode()
+    model = {"api": MODEL, "gemini": GEMINI_MODEL, "cli": "Claude CLI"}.get(mode)
     return {"ok": True, "nodes": len(GRAPH["nodes"]), "edges": len(GRAPH["edges"]),
-            "llm": mode != "off", "mode": mode,
-            "model": MODEL if mode == "api" else ("Claude CLI" if mode == "cli" else None)}
+            "llm": mode != "off", "mode": mode, "model": model}
 
 @app.get("/api/graph")
 def graph(part: str = Query(None), type: str = Query(None), docs: bool = Query(False)):
@@ -264,9 +284,73 @@ def claude_cli_agent(task, framing, timeout=480):
     ans = re.sub(r"\n?CITED:.*$", "", ans).strip()  # strip machine-readable CITED line
     return {"answer": ans, "pages": pages, "trace": trace, "usage": usage}
 
+_GEM_FN = [{"functionDeclarations": [
+    {"name": "search_wiki", "description": "Keyword-search the wiki; returns matching page ids with type and label.",
+     "parameters": {"type": "object", "properties": {"query": {"type": "string"}}, "required": ["query"]}},
+    {"name": "read_pages", "description": "Return the full markdown of given wiki page ids (symbols like 07-13-05, standards like iec-56, concepts like circuit-breaker).",
+     "parameters": {"type": "object", "properties": {"ids": {"type": "array", "items": {"type": "string"}}}, "required": ["ids"]}},
+]}]
+
+def gemini_agent(task, framing, max_steps=12):
+    """Wiki-navigation via the Gemini API (function calling) — same loop as
+    wiki_agent: read index -> search_wiki / read_pages -> follow links -> cite.
+    Returns answer + step trace + token usage (cost is an estimate for Flash)."""
+    key = os.environ.get("GEMINI_API_KEY", "")
+    url = "https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s" % (GEMINI_MODEL, key)
+    sysp = (framing + " You answer by navigating a curated wiki of IEC graphical symbols and standards. "
+            "Use search_wiki to find pages and read_pages to read them; follow [[links]] inside pages by "
+            "reading those too, and connect symbols to standards via the concept pages that link both. Cite "
+            "pages in brackets like [07-13-05] or [iec-56]. Base your answer ONLY on pages you actually read.")
+    contents = [{"role": "user", "parts": [{"text": sysp + "\n\nWIKI INDEX (catalog):\n" + read_index()[:14000] + "\n\n" + task}]}]
+    read_ids, trace = [], []
+    cin = cout = 0
+    t0 = time.time()
+    def usage():
+        return {"turns": len(trace), "duration_s": round(time.time() - t0, 1), "input": cin,
+                "output": cout, "cost_usd": round(cin / 1e6 * 0.30 + cout / 1e6 * 2.50, 4)}  # ~Flash rates
+    for _ in range(max_steps):
+        body = {"contents": contents, "tools": _GEM_FN,
+                "toolConfig": {"functionCallingConfig": {"mode": "AUTO"}}}
+        req = urllib.request.Request(url, data=json.dumps(body).encode(), headers={"content-type": "application/json"})
+        try:
+            resp = json.loads(urllib.request.urlopen(req, timeout=120).read())
+        except urllib.error.HTTPError as e:
+            return {"answer": "(Gemini API error %s: %s)" % (e.code, e.read().decode("utf-8", "ignore")[:300]),
+                    "pages": read_ids, "trace": trace, "usage": usage()}
+        except Exception as e:
+            return {"answer": "(Gemini API error: %s)" % e, "pages": read_ids, "trace": trace, "usage": usage()}
+        um = resp.get("usageMetadata", {}) or {}
+        cin += um.get("promptTokenCount", 0) or 0
+        # candidates + thinking tokens (2.5 Flash "thinking" is billed at the output rate)
+        cout += (um.get("candidatesTokenCount", 0) or 0) + (um.get("thoughtsTokenCount", 0) or 0)
+        cand = (resp.get("candidates") or [{}])[0]
+        parts = (cand.get("content") or {}).get("parts") or []
+        calls = [p["functionCall"] for p in parts if "functionCall" in p]
+        if not calls:
+            text = "".join(p.get("text", "") for p in parts if "text" in p)
+            return {"answer": text or "(empty Gemini response; finishReason=%s)" % cand.get("finishReason"),
+                    "pages": read_ids, "trace": trace, "usage": usage()}
+        contents.append({"role": "model", "parts": parts})
+        fresps = []
+        for fc in calls:
+            nm, args = fc.get("name"), (fc.get("args") or {})
+            if nm == "search_wiki":
+                trace.append('Grep "%s"' % (args.get("query", "") or ""))
+                out = fts_pages(args.get("query", ""), 12)
+            else:
+                ids = (args.get("ids") or [])[:12]; read_ids += ids
+                for i in ids: trace.append("Read %s.md" % i)
+                out = [{"id": i, "markdown": (page_markdown(i) or "(not found)")[:1600]} for i in ids]
+            fresps.append({"functionResponse": {"name": nm, "response": {"result": out}}})
+        contents.append({"role": "user", "parts": fresps})
+    return {"answer": "(stopped after max navigation steps)", "pages": read_ids, "trace": trace, "usage": usage()}
+
 def run_agent(task, framing):
-    """Dispatch to the active AI backend (Anthropic SDK or local Claude CLI)."""
-    return (wiki_agent if ai_mode() == "api" else claude_cli_agent)(task, framing)
+    """Dispatch to the active AI backend (Anthropic SDK / Gemini API / local Claude CLI)."""
+    m = ai_mode()
+    if m == "api": return wiki_agent(task, framing)
+    if m == "gemini": return gemini_agent(task, framing)
+    return claude_cli_agent(task, framing)
 
 def _cites(ids):
     return [{"id": i, "label": NODES.get(i, {}).get("label", i),
@@ -276,10 +360,12 @@ def _log_history(kind, query, resp):
     """Append a finished Ask/SOW run to the shared review log (best-effort)."""
     if not resp.get("answer"):
         return
+    m = ai_mode()
+    model = {"api": MODEL, "gemini": GEMINI_MODEL, "cli": "claude-cli"}.get(m, m)
     try:
         with open(HIST, "a") as f:
             f.write(json.dumps({"ts": datetime.datetime.now().isoformat(timespec="seconds"),
-                                "kind": kind, "query": query, "answer": resp.get("answer"),
+                                "kind": kind, "query": query, "model": model, "answer": resp.get("answer"),
                                 "citations": resp.get("citations", []), "trace": resp.get("trace", []),
                                 "usage": resp.get("usage", {})}, ensure_ascii=False) + "\n")
     except Exception:
